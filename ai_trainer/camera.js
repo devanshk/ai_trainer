@@ -26,12 +26,15 @@ const videoWidth = 600;
 const videoHeight = 500;
 const stats = new Stats();
 
-function posesMatch(refPose, userPose, ctx) {
-  console.log(refPose);
-
+function poseDist(refPose, userPose, ctx) {
   // Crop both poses
   let refKP = refPose['keypoints'];
   let userKP = userPose['keypoints'];
+
+  // Test case: Randomize userKP for distance testing
+  // userKP = userKP.map(({score, part, position}) => {
+  //   return {score: score, part: part, position: {x: position['x'] + Math.random()*1500, y: position['y'] + Math.random()*1200}}
+  // });
 
   let refBB = posenet.getBoundingBox(refKP);
   let userBB = posenet.getBoundingBox(userKP);
@@ -70,10 +73,46 @@ function posesMatch(refPose, userPose, ctx) {
   let userNorm = math.sqrt(userVec.map((x)=>{return x*x}).reduce((a, b) => a + b, 0));
   userVec = userVec.map((x)=>{return x/refNorm});
 
-  // Compute similarity
-  let cosineSimilarity = similarity(refVec, userVec);
-  let distance = 2 * (1 - cosineSimilarity);
-  return Math.sqrt(distance);
+  // Add in confidence scores
+  let refConfScores = refKP.map(({score, p, po}) => {return score});
+  refVec = refVec.concat(refConfScores);
+  let userConfScores = userKP.map(({score, p, po}) => {return score});
+  userVec = userVec.concat(userConfScores);
+
+  // Add in sum of confidence values
+  refVec.push(math.sum(refConfScores));
+  userVec.push(math.sum(userConfScores));
+
+  // Compute similarity by weighting lower-confidence values lower
+  return weightedDistanceMatching(refVec, userVec);
+}
+
+// poseVector1 and poseVector2 are 52-float vectors composed of:
+// Values 0-33: are x,y coordinates for 17 body parts in alphabetical order
+// Values 34-51: are confidence values for each of the 17 body parts in alphabetical order
+// Value 51: A sum of all the confidence values
+// The lower the number, the closer the distance
+// Pulled from https://medium.com/tensorflow/move-mirror-an-ai-experiment-with-pose-estimation-in-the-browser-using-tensorflow-js-2f7b769f9b23
+
+function weightedDistanceMatching(poseVector1, poseVector2) {
+  let vector1PoseXY = poseVector1.slice(0, 34);
+  let vector1Confidences = poseVector1.slice(34, 51);
+  let vector1ConfidenceSum = poseVector1.slice(51, 52);
+
+  let vector2PoseXY = poseVector2.slice(0, 34);
+
+  // First summation
+  let summation1 = 1 / vector1ConfidenceSum;
+
+  // Second summation
+  let summation2 = 0;
+  for (let i = 0; i < vector1PoseXY.length; i++) {
+    let tempConf = Math.floor(i / 2);
+    let tempSum = vector1Confidences[tempConf] * Math.abs(vector1PoseXY[i] - vector2PoseXY[i]);
+    summation2 = summation2 + tempSum;
+  }
+
+  return summation1 * summation2;
 }
 
 
@@ -489,7 +528,7 @@ function detectPoseInRealTime(video, net) {
         }
       }
 
-      posesMatch({score, keypoints}, {score, keypoints}, ctx);
+      poseDist({score, keypoints}, {score, keypoints}, ctx);
     });
 
     // End monitoring code for frames per second
