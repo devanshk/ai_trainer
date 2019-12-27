@@ -16,5 +16,9 @@
   "bugs": {
     "url": "https://github.com/devanshk/ai_trainer/issues"
   },
-  "homepage": "https://github.com/devanshk/ai_trainer#readme"
+  "homepage": "https://github.com/devanshk/ai_trainer#readme",
+  "dependencies": {
+    "@tensorflow-models/posenet": "^2.2.1",
+    "@tensorflow/tfjs": "^1.5.1"
+  }
 }
