@@ -4,6 +4,10 @@
 <head>
     <title>PoseNet - Camera Feed Demo</title>
     <style>
+        .wrapper {
+           width: 50%;
+           float: right;
+        }
         .footer {
             position: fixed;
             left: 0;
@@ -84,6 +88,9 @@
         <div class="sk-spinner sk-spinner-pulse"></div>
     </div>
     <div id='main' style='display:none'>
+        <video id="instructor" class = "wrapper"  width = "560" height = "315" controls>
+            <source src="squat.mp4#t=00:00:20">
+        </video>
         <video id="video" playsinline style=" -moz-transform: scaleX(-1);
         -o-transform: scaleX(-1);
         -webkit-transform: scaleX(-1);
@@ -91,7 +98,7 @@
         display: none;
         ">
         </video>
-        <canvas id="output" style="width:50%" />
+        <canvas id="output" class = "wrapper" />
     </div>
     <div class="footer">
         <div class="footer-text">
