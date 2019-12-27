@@ -36,16 +36,12 @@ function posesMatch(refPose, userPose, ctx) {
   let refBB = posenet.getBoundingBox(refKP);
   let userBB = posenet.getBoundingBox(userKP);
 
-  drawBoundingBox(userKP, ctx);
-
   refKP = refKP.map(({score, part, position}) => {
     return {score: score, part: part, position: {x: position['x']-refBB['minX'], y: position['y']-refBB['minY']}}
   });
   userKP = userKP.map(({score, part, position}) => {
     return {score: score, part: part, position: {x: position['x']-userBB['minX'], y: position['y']-userBB['minY']}}
   });
-
-  drawBoundingBox(userKP, ctx);
 
   // Scale userPose to match refPose
   const scaleX = (refBB['maxX'] - refBB['minX']) / (userBB['maxX'] - userBB['minX'])
