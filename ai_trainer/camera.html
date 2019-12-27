@@ -89,7 +89,7 @@
     </div>
     <div id='main' style='display:none'>
         <video id="instructor" class = "wrapper"  width = "560" height = "315" controls>
-            <source src="squat.mp4#t=00:00:20">
+            <source src="squat.mp4#t=6,10">
         </video>
         <video id="video" playsinline style=" -moz-transform: scaleX(-1);
         -o-transform: scaleX(-1);
@@ -100,17 +100,6 @@
         </video>
         <canvas id="output" class = "wrapper" />
     </div>
-    <div class="footer">
-        <div class="footer-text">
-            <p>
-                PoseNet runs with either a <strong>single-pose</strong> or <strong>multi-pose</strong> detection
-                algorithm. The single person pose detector is faster and more accurate but requires only one subject
-                present in the image.
-                <br>
-                <br> The <strong>output stride</strong> and <strong>input resolution</strong> have the largest effects
-                on accuracy/speed. A <i>higher</i> output stride results in lower accuracy but higher speed. A
-                <i>higher</i> image scale factor results in higher accuracy but lower speed. </p>
-        </div>
     </div>
     <script src="camera.js"></script>
 </body>
