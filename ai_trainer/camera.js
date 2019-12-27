@@ -15,6 +15,8 @@
  * =============================================================================
  */
 import * as posenet from '@tensorflow-models/posenet';
+import * as math from 'mathjs';
+const similarity = require('compute-cosine-similarity');
 import dat from 'dat.gui';
 import Stats from 'stats.js';
 
@@ -23,6 +25,61 @@ import {drawBoundingBox, drawKeypoints, drawSkeleton, isMobile, toggleLoadingUI,
 const videoWidth = 600;
 const videoHeight = 500;
 const stats = new Stats();
+
+function posesMatch(refPose, userPose, ctx) {
+  console.log(refPose);
+
+  // Crop both poses
+  let refKP = refPose['keypoints'];
+  let userKP = userPose['keypoints'];
+
+  let refBB = posenet.getBoundingBox(refKP);
+  let userBB = posenet.getBoundingBox(userKP);
+
+  drawBoundingBox(userKP, ctx);
+
+  refKP = refKP.map(({score, part, position}) => {
+    return {score: score, part: part, position: {x: position['x']-refBB['minX'], y: position['y']-refBB['minY']}}
+  });
+  userKP = userKP.map(({score, part, position}) => {
+    return {score: score, part: part, position: {x: position['x']-userBB['minX'], y: position['y']-userBB['minY']}}
+  });
+
+  drawBoundingBox(userKP, ctx);
+
+  // Scale userPose to match refPose
+  const scaleX = (refBB['maxX'] - refBB['minX']) / (userBB['maxX'] - userBB['minX'])
+  const scaleY = (refBB['maxY'] - refBB['minY']) / (userBB['maxY'] - userBB['minY'])
+
+  refKP = refKP.map(({score, part, position}) => {
+    return {score: score, part: part, position: {x: position['x'] * scaleX, y: position['y'] * scaleY}}
+  });
+  userKP = userKP.map(({score, part, position}) => {
+    return {score: score, part: part, position: {x: position['x'] * scaleX, y: position['y'] * scaleY}}
+  });
+
+  // Vectorize poses
+  let refVec = [].concat.apply([], refKP.map(({s, p, position}) => {
+    return [position['x'], position['y']];
+  }));
+
+  let userVec = [].concat.apply([], userKP.map(({s, p, position}) => {
+    return [position['x'], position['y']];
+  }));
+
+  // L2 Normalize Vectors
+  let refNorm = math.sqrt(refVec.map((x)=>{return x*x}).reduce((a, b) => a + b, 0));
+  refVec = refVec.map((x)=>{return x/refNorm});
+
+  let userNorm = math.sqrt(userVec.map((x)=>{return x*x}).reduce((a, b) => a + b, 0));
+  userVec = userVec.map((x)=>{return x/refNorm});
+
+  // Compute similarity
+  let cosineSimilarity = similarity(refVec, userVec);
+  let distance = 2 * (1 - cosineSimilarity);
+  return Math.sqrt(distance);
+}
+
 
 /**
  * Loads a the camera to be used in the demo
@@ -435,6 +492,8 @@ function detectPoseInRealTime(video, net) {
           drawBoundingBox(keypoints, ctx);
         }
       }
+
+      posesMatch({score, keypoints}, {score, keypoints}, ctx);
     });
 
     // End monitoring code for frames per second
